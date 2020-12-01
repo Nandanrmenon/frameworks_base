@@ -85,14 +85,7 @@
                     android:scaleType="centerInside"/>
             </com.android.systemui.statusbar.phone.MultiUserSwitch>
 
-            <com.android.systemui.statusbar.AlphaOptimizedFrameLayout
-                android:id="@+id/settings_button_container"
-                android:layout_width="@dimen/qs_footer_action_button_size"
-                android:layout_height="@dimen/qs_footer_action_button_size"
-                android:clipChildren="false"
-                android:clipToPadding="false">
-
-                <com.android.systemui.statusbar.AlphaOptimizedImageView
+            <com.android.systemui.statusbar.AlphaOptimizedImageView
                     android:id="@android:id/edit"
                     android:layout_width="@dimen/qs_footer_action_button_size"
                     android:layout_height="@dimen/qs_footer_action_button_size"
@@ -104,6 +97,13 @@
                     android:padding="@dimen/qs_footer_icon_padding"
                     android:src="@*android:drawable/ic_mode_edit"
                     android:tint="?android:attr/colorForeground"/>
+                    
+            <com.android.systemui.statusbar.AlphaOptimizedFrameLayout
+                android:id="@+id/settings_button_container"
+                android:layout_width="@dimen/qs_footer_action_button_size"
+                android:layout_height="@dimen/qs_footer_action_button_size"
+                android:clipChildren="false"
+                android:clipToPadding="false">
 
                 <com.android.systemui.statusbar.phone.SettingsButton
                     android:id="@+id/settings_button"
