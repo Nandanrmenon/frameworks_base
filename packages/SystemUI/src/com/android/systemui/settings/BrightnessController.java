@@ -49,6 +49,7 @@ import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.settingslib.RestrictedLockUtilsInternal;
 import com.android.systemui.Dependency;
 import com.android.systemui.broadcast.BroadcastDispatcher;
+import com.android.systemui.R;
 
 import java.util.ArrayList;
 
@@ -79,7 +80,6 @@ public class BrightnessController implements ToggleSlider.Listener {
     private final float mMaximumBacklightForVr;
     private final float mDefaultBacklightForVr;
 
-    private final ImageView mIcon;
     private final Context mContext;
     private final ToggleSlider mControl;
     private final boolean mAutomaticAvailable;
@@ -89,6 +89,14 @@ public class BrightnessController implements ToggleSlider.Listener {
 
     private final Handler mBackgroundHandler;
     private final BrightnessObserver mBrightnessObserver;
+
+    private final ImageView mIcon;
+    private final ImageView mLevelIcon;
+    private ImageView mMirrorIcon = null;
+    private ImageView mMirrorLevelIcon = null;
+
+    private int mSliderMax = 0;
+    private int mSliderValue = 0;
 
     private ArrayList<BrightnessStateChangeCallback> mChangeCallbacks =
             new ArrayList<BrightnessStateChangeCallback>();
@@ -230,7 +238,7 @@ public class BrightnessController implements ToggleSlider.Listener {
                 mHandler.obtainMessage(MSG_UPDATE_ICON, mAutomatic ? 1 : 0).sendToTarget();
             } else {
                 mHandler.obtainMessage(MSG_SET_CHECKED, 0).sendToTarget();
-                mHandler.obtainMessage(MSG_UPDATE_ICON, 0 /* automatic */).sendToTarget();
+                mHandler.obtainMessage(MSG_UPDATE_ICON, 0).sendToTarget();
             }
         }
     };
@@ -279,6 +287,7 @@ public class BrightnessController implements ToggleSlider.Listener {
                         break;
                     case MSG_UPDATE_SLIDER:
                         updateSlider(Float.intBitsToFloat(msg.arg1), msg.arg2 != 0);
+                        updateIcon(mAutomatic);
                         break;
                     case MSG_SET_CHECKED:
                         mControl.setChecked(msg.arg1 != 0);
@@ -301,10 +310,15 @@ public class BrightnessController implements ToggleSlider.Listener {
         }
     };
 
-    public BrightnessController(Context context, ImageView icon, ToggleSlider control,
-            BroadcastDispatcher broadcastDispatcher) {
+    public BrightnessController(Context context, ImageView levelIcon, ImageView icon,
+            ToggleSlider control, BroadcastDispatcher broadcastDispatcher) {
         mContext = context;
         mIcon = icon;
+        mLevelIcon = levelIcon;
+        mIcon.setOnClickListener((View v) -> {
+            onClickAutomaticIcon();
+        });
+        mSliderMax = GAMMA_SPACE_MAX;
         mControl = control;
         mControl.setMax(GAMMA_SPACE_MAX);
         mBackgroundHandler = new Handler((Looper) Dependency.get(Dependency.BG_LOOPER));
@@ -337,17 +351,6 @@ public class BrightnessController implements ToggleSlider.Listener {
         mDisplayManager = context.getSystemService(DisplayManager.class);
         mVrManager = IVrManager.Stub.asInterface(ServiceManager.getService(
                 Context.VR_SERVICE));
-
-        mIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Settings.System.putIntForUser(mContext.getContentResolver(),
-                        Settings.System.SCREEN_BRIGHTNESS_MODE, mAutomatic ?
-                            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL :
-                            Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
-                        UserHandle.USER_CURRENT);
-            }
-        });
     }
 
     public void addStateChangedCallback(BrightnessStateChangeCallback cb) {
@@ -376,6 +379,7 @@ public class BrightnessController implements ToggleSlider.Listener {
     @Override
     public void onChanged(ToggleSlider toggleSlider, boolean tracking, boolean automatic,
             int value, boolean stopTracking) {
+        mSliderValue = value;
         updateIcon(mAutomatic);
         if (mExternalChange) return;
 
@@ -448,10 +452,37 @@ public class BrightnessController implements ToggleSlider.Listener {
     }
 
     private void updateIcon(boolean automatic) {
-        if (mIcon != null) {
-            mIcon.setImageResource(mAutomatic ?
-                    com.android.systemui.R.drawable.ic_qs_brightness_auto_on :
-                    com.android.systemui.R.drawable.ic_qs_brightness_auto_off);
+        updateIconInternal(automatic, mIcon, mLevelIcon);
+        updateIconInternal(automatic, mMirrorIcon, mMirrorLevelIcon);
+    }
+
+    private void updateIconInternal(boolean automatic, ImageView icon, ImageView levelIcon) {
+        if (icon != null) {
+            if (automatic) {
+                icon.setImageResource(R.drawable.ic_qs_brightness_auto_on);
+            } else {
+                icon.setImageResource(R.drawable.ic_qs_brightness_auto_off);
+            }
+        }
+        if (levelIcon == null) {
+            return;
+        }
+        if (mIsVrModeEnabled) {
+            if (((float) mSliderValue) <= mMinimumBacklightForVr) {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_low);
+            } else if (mSliderValue >= mSliderMax - 1) {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_high);
+            } else {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_medium);
+            }
+        } else {
+            if (((float) mSliderValue) <= mMinimumBacklight) {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_low);
+            } else if (mSliderValue >= mSliderMax - 1) {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_high);
+            } else {
+                levelIcon.setImageResource(R.drawable.ic_qs_brightness_medium);
+            }
         }
     }
 
@@ -503,6 +534,15 @@ public class BrightnessController implements ToggleSlider.Listener {
                 mControl.getValue() - target) / GAMMA_SPACE_MAX;
         mSliderAnimator.setDuration(animationDuration);
         mSliderAnimator.start();
+    }
+
+    public void onClickAutomaticIcon() {
+        setMode(!mAutomatic ? 1 : 0);
+    }
+
+    public void setMirrorView(View v) {
+        mMirrorIcon = v.findViewById(R.id.brightness_icon);
+        mMirrorLevelIcon = v.findViewById(R.id.brightness_level);
     }
 
 }
