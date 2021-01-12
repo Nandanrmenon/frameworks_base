@@ -90,12 +90,19 @@
             </LinearLayout>
         </com.android.systemui.qs.QSHeaderInfoLayout>
 
-        <include layout="@layout/qs_carrier_group"
+        <!-- <include layout="@layout/qs_carrier_group"
                  android:id="@+id/carrier_group"
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
                  android:layout_marginStart="@dimen/qs_status_separator"
                  android:layout_gravity="end|center_vertical"
-                 android:focusable="false"/>
+                 android:focusable="false"/> -->
+        <com.android.systemui.statusbar.phone.StatusIconContainer
+            android:id="@+id/statusIcons"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_gravity="end|center_vertical"
+            android:paddingEnd="@dimen/signal_cluster_battery_padding" />
 
 </LinearLayout>
